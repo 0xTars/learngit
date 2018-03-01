@@ -1,0 +1,126 @@
+安装部署
+  $ git config --global user.name "Your Name"
+  $ git config --global user.email "email@example.com
+
+建立本地仓库
+    初始化git仓库：git init
+    添加文件到Git仓库：
+        第一步，使用命令git add <file>，注意，可反复多次使用，添加多个文件；
+        第二步，使用命令git commit，完成。  git commit -m "本次提交说明"
+
+工作区的状态
+    当前工作区状态：git status
+    查看修改内容：git diff <file>
+    提交日志：git log （加上--pretty=oneline参数，可以看到sha1值的版本号）
+
+版本回退
+    回到上一个版本：git reset HEAD^  (用HEAD表示当前版本，上一个版本就是HEAD^，上上一个版本就是HEAD^^)
+    回退指定次数版本：git reset HEAD~100。
+    回到指定版本：git reset  --hard <版本号>
+
+版本相关
+    查看版本内容：cat <file>
+    记录的每次命令内容：git reflog
+    查看工作区和版本库区别：git diff HEAD -- <file>
+
+工作区和暂存区
+    丢弃工作区的修改：git checkout -- <file>
+    丢弃暂存区的修改：
+        第一步用命令git reset HEAD <file> 回到上一个场景
+        第二步执行丢弃工作区的修改
+    删除本地文件:git rm <file>
+    删除远程文件：git commit -m "删除信息"   (本地删除后提交就行)
+        注：如果一个文件已经被提交到版本库，那么你永远不用担心误删，
+        可以先执行git reset HEAD <file>，然后git checkout -- <file>
+
+远程仓库
+    创建ssh key链接：ssh-keygen -t rsa -C"10251406@qq.com"
+    关联远程库：git remote add origin git@server-name:path/repo-name.git
+        例：git remote add origin git@gitee.com:Tars0x/repo-name.git
+    查看已关联的远程库：git remote -v
+    删除远程库：git remote rm <仓库名>
+    推送内容：git push -u <仓库名> master第一次推送master分支的所有内容
+    此后推送最新修改：git push origin master
+    克隆仓库：git clone
+        例：git clone git@github.com:0xTars/gitskills.git
+
+分支管理
+    查看分支：git branch
+    创建分支：git branch <name>
+    切换分支：git checkout <name>
+    创建+切换分支：git checkout -b <name>
+    合并某分支到当前分支：git merge <name>
+    普通模式合并分支：git merge <name> --no-ff
+    删除分支：git branch -d <name>
+    查看分支合并图：git log --graph
+    查看分支历史：git log --graph --pretty=oneline --abbrev-commit
+
+Bug分支
+    存储工作现场：git stash
+    查看存储的工作现场：git stash list
+    恢复工作现场：
+        1：git stash apply   (stash内容并不删除，需要用git stash drop删除)
+        2：git stash pop     (恢复的同时把stash内容也删了)
+
+Feature分支
+    新功能开发：git checkout -b
+    强制删除：git branch -D <branch-name>
+
+多人协作
+    查看远程仓库详细信息：git remote -v(远程仓库默认名为：origin)
+    本地推送分支：git push origin <branch-name>  如果推送失败，先抓取远程仓库分支
+    推送注意：
+        master分支是主分支，因此要时刻与远程同步；
+        dev分支是开发分支，团队所有成员都需要在上面工作，所以也需要与远程同步；
+        bug分支只用于在本地修复bug，就没必要推到远程了，除非老板要看看你每周到底修复了几个bug；
+        feature分支是否推到远程，取决于你是否和你的小伙伴合作在上面开发。
+    远程抓取分支：git pull 如果有冲突，要先处理冲突
+    指定本地分支与远程分支的链接：git branch --set-upstream <branch-name> origin/<branch-name>
+    创建远程分支到本地：git checkout -b dev origin/dev
+
+    多人协作的工作模式：
+      1.首先，可以试图用git push origin branch-name推送自己的修改；
+      2.如果推送失败，则因为远程分支比你的本地更新，需要先用git pull试图合并；
+      3.如果合并有冲突，则解决冲突，并在本地提交；
+      4.没有冲突或者解决掉冲突后，再用git push origin branch-name推送就能成功！
+
+标签管理
+      分支标签：git tag <tagname>
+      查看所有标签：git tag
+      查找历史提交id：git log --pretty=oneline --abbrev-commit
+      历史标签：git tag <tagname> <commit-id>
+      查看标签信息：git show <tagname>
+      带有说明的标签：git tag -a <tagname> -m "文本说明" <commit-id>
+      PGP签名：(需要安装PGP)
+      私有签名标签：git tag -s <tagname> -m "文本说明" <commit-id>
+      删除标签：
+          本地：git tag -d <tagname>
+          远程: git push origin :/refs/tags/<tagname>
+      推送标签到远程：
+          单个推送：git push origin <tagname>
+          集体推送：git push origin --tags
+
+自定义配置
+      让Git显示颜色：git config --global color.ui true
+      配置别名：git config --global alias.别名 原名
+      全局参数：--global 不加只对当前仓库生效
+      配置一个别名表：git config --global alias.last 'log -1'
+      配置文件存放目录：.git/config
+
+忽略特殊文件
+      让Git工作区的根目录下创建一个特殊的.gitignore文件，把要忽略的文件名填进去。
+      Github配置文件地址：https://github.com/github/gitignore
+      被忽略格式强制添加：git add -f <file>
+
+搭建Git服务器
+      Linux下安装命令
+          安装git：sudo apt-get install git
+          创建git用户：sudo adduser git
+          导入公钥：id_ras.pub文件导入到/home/git/.ssh/authorized_keys文件里
+          初始化仓库：
+              选定一个目录创建Git：sudo git init --bare <name>.git
+              修为尾部名称：sudo chown -R git:git <name>.git
+          禁用shell登录：
+              编辑文件名录：/etc/passwd
+              修改文件：git:x:1001:1001:,,,:/home/git:/bin/bash
+              修改后：  git:x:1001:1001:,,,:/home/git:/usr/bin/git-shell
