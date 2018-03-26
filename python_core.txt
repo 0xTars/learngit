@@ -1,0 +1,523 @@
+IO编程
+    #计算机中的Input／Output，也就是输入和输出。程序和运行时数据在内存中驻留，由cpu执行，
+    涉及到数据交换的地方，通常是磁盘，网络等，就需要Io接口。
+    文件读写：
+        读文件：使用Python内置的open()函数，传入文件名和标识符：
+              #标识符‘r’表示读，文件不存在会抛出一个IOError异常
+              示例>>>f = open('/Users/Tars/test.txt', 'r')
+              #如果文件打开成功，调用read()方法可以一次读取文件的全部内容，内容读取到内存。
+              #！调用read()会一次性读取文件的全部内容，如果文件有10g，就会内存溢出。
+              #保险起见，可以反复调用read(size)方法，每次最多读取size个字节的内容
+              示例>>>f.read()     >>>'Hello,world!'
+              #最后关闭文件使用close()方法
+              示例>>>f.colse()
+              #引用with语句来自动调用程序异常后的colose()方法：
+              示例>>>with open('/path/to/file','r') as f:
+                         print(f.read())
+              #使用with后不管with中的代码出现什么错误，都会进行对当前对象进行清理工作。
+         file-like Object：像open()函数返回的这种有个read()方法的对象，
+                          在Python中统称为file-like Object。除了file外，
+                          还可以是内存的字节流，网络流，自定义流等等。
+                          file-like Object不要求从特定类继承，只要写个read()方法就行。
+         二进制文件：要读取二进制文件，比如图片、视频等等，用'rb'模式打开文件.
+                #标识符‘rb’表示读取一个二进制文件
+                示例>>>f = open('/Users/Tars/test.jpg', 'rb')
+                   >>>f.read()
+         字符编码：要读取非utf-8编码的文本文件，需要open()函数传入encoding参数。
+                #读取GBK编码的文件：
+                示例>>>f = open ('/Users/Tars/gbk.txt','r',encoding='gbk')
+                   >>>f.read()
+                #遇到编码不规范的文件，会遇到UnicodeDecodeError，open()函数在接收一个errors参数
+                示例>>>f = open('/Users/Tars/gbk.txt','r',encoding='gbk',errors='igonre')
+         写文件：写文件和读文件是一样的，唯一区别是调用open()函数时，传入标识符'w'或者'wb'表示写文本文件或写二进制文件
+               #写入一个文件
+               示例>>>f = open('Users/Tars/test.txt','w')
+                  >>>f.write('Hello,world')
+                  >>>f.close
+                #引用with来保存写入，在调用close()方法后系统才会把数据写入到磁盘
+                示例>>>with open('Users/Tars/text.txt','w')as f:
+                  >>>f.write('Hello,world')
+         小记：写入特定的编码文本文件，要给open()函数传入encoding参数，将字符串自动转换成指定编码。
+               ！以'w'模式写入文件时，如果文件已存在，会直接覆盖（相当于删掉后新写入一个文件）。
+               如果我们希望追加到文件末尾怎么办？可以传入'a'以追加（append）模式写入
+    StringIo和BytesIo
+         StringIo：在内存中读写str
+                  #把str写入StringIO，先创建一个StringIO，然后，像文件一样写入即可
+                  导入io模块中的StringIO，创建StringIO的实例。
+                  ！getvalue()方法用于获得写入后的str。
+
+          BytesIO：在内存中读写二进制文件
+                  #导入Io模块中的BytesIO，创建BytesIO实例
+                  #读取时，需要加入utf-8编码
+                  示例>>>f.write('中文',encode('utf-8'))
+    操作文件和目录：在python中执行系统文件和目录的导致
+                  #导入os模块，查看系统定义的环境变量
+                  示例>>>os.environ
+                  #获取某个环境变量的值
+                  示例>>>os.environ.get('PATH')
+                  #查看当前目录的绝对路径
+                  示例>>>os.path.abspath('.')
+                  #在某个目录下创建一个心路亩，首先把目录的完整路径表示出来
+                     >>>os.path.join('/User/Tars,'testdir')
+                  #然后创建一个目录
+                     >>>os.mkdir('/User/Tars/testdir')
+                  #删除一个目录
+                     >>>os.rmdir('/Users/Tars/]testdir')
+             join()和split()
+                  合并一个路径：os.path.join()
+                  拆分一个路径：os.oath.join()
+                  #这些合并、拆分路径的函数并不要求目录和文件要真实存在，它们只对字符串进行操作。
+             shutil模块：可以看作是os模块的补充，提供了复制过滤等功能
+                  #列出当前目录里的所有目录
+                   >>>[x for x in os.listdir('.') if os.path.isdir(x)]
+    序列化：把变量从内存中变成可存储或者传输的过程称之为序列化某，python中叫pickling
+           通过picke模块来实现序列化
+           >>>d = dict(name='bob', age=20, acore=88)
+           #dumps()把任意对象序列化成bytes
+           >>>pickle.dumps(d)
+           #序列化成一个file-like Object
+           >>>f = open('dump.txt','wb')
+           >>>pickle.dump(d,f)
+           >>>f.close()
+           把对象从磁盘读到内存时，可以先把内容读到一个bytes，反序列化使用pickle.loads()方法，
+           也可以直接用pickle.load()方法从一个file-like Object
+           >>> f = open('dump.txt', 'rb')
+           >>> d = pickle.load(f)
+           >>> f.close()
+           >>> d
+           {'age': 20, 'score': 88, 'name': 'Bob'}
+
+           JSON:把对象序列化为标准格式，用于不同编程语言之间的传递。
+                python内置json模块提供了非常完善的python对象到JSON格式的转换
+                示例>>>import jgon
+                >>> d = dict(name='Bob', age=20, score=88)
+                #把pickle替换为json即可
+                >>> json.dumps(d)
+                #返回一个str
+                '{"age": 20, "score": 88, "name": "Bob"}'
+                #把JSON反序列化成python对象
+                >>> json_str = '{"age": 20, "score": 88, "name": "Bob"}'
+                >>> json.loads(json_str)
+                {'age': 20, 'score': 88, 'name': 'Bob'}
+
+            JSON进阶：定制JSON序列化
+                #default把任意一个对象变成可序列化为JSON的对象。
+                #把一个类的属性定制到一个返回函数中在序列化
+                >>>print(json.dumps(s,default=返回函数))
+                #可以使用匿名函数偷懒把任意class的实例变为dict
+
+进程和线程
+    #进程：一个任务就是一个进程，一个程序可以有多个进程，一个进程可以有多个线程。
+    #线程：进程任务中的子任务，每个进程至少有一个线程，线程只存在进程中。
+    多任务的实现有3种方式：
+        多进程模式：
+        多线程模式：
+        多进程+多线程：
+     #注！多进程在系统的可用性上比较高，举个例子，一个程序拥有多个进程，其中一个崩溃，
+      不会影响其他进程，如果一个线程崩掉，整个进程就崩掉了。
+
+     #再注！同时执行多个任务通常各个任务之间并不是没有关联的，而是需要相互通信和协调，
+      有时，任务1必须暂停等待任务2完成后才能继续执行，有时，任务3和任务4又不能同时执行，
+      所以，多进程和多线程的程序的复杂度要远远高于我们前面写的单进程单线程的程序。
+      因为复杂度高，调试困难，所以，不是迫不得已，我们也不想编写多任务。但是，有很多时候，
+      没有多任务还真不行。想想在电脑上看电影，就必须由一个线程播放视频，另一个线程播放音频，
+      否则，单线程实现的话就只能先把视频播放完再播放音频，或者先把音频播放完再播放视频，
+      这显然是不行的。
+
+      多进程：
+      操作系统相关知识：Unix/Linux操作系统提供了一个fork()系统调用，它非常特殊。
+          普通的函数调用，调用一次，返回一次，但是fork()调用一次，返回两次，
+          因为操作系统自动把当前进程（称为父进程）复制了一份（称为子进程），然后，分别在父进程和子进程内返回
+          子进程永远返回0，而父进程返回子进程的ID。这样做的理由是，一个父进程可以fork出很多子进程，
+          所以，父进程要记下每个子进程的ID，而子进程只需要调用getppid()就可以拿到父进程的ID。
+
+       创建多进程：
+       #unix/liunx上使用os模块中fork()
+       pid = os.fork()
+        if pid == 0:
+           print('I am child process (%s) and my parent is %s.' % (os.getpid(), os.getppid()))
+        else:
+           print('I (%s) just created a child process (%s).' % (os.getpid(), pid))
+        #跨平台使用multiprocessing模块
+         #创建子进程
+         p=Process(target=子进程执行的函数名，arge=(‘值’，))
+         #启动多进程
+         p.start()
+         #阻塞多进程 ,如果不阻塞，主进程不会等待子进程执行结束就关闭程序
+        进程池： Pool
+        #如果要启动大量的子进程，可以用进程池的方式批量创建子进程
+        #创建4个进程
+         p=Pool(4)
+        #用多进程去指定某个函数或者方法等
+         p.apply_async(名，args=(值,))
+        #关闭进程池 ,调用join()之前添加，之后就不能添加Process了
+         p.close()
+        #阻塞
+         p.join()
+    子进程:很多时候，子进程并不是自身，而是一个外部进程。我们创建了子进程后，还需要控制子进程的输入和输出
+          subprocess模块可以让我们非常方便地启动一个子进程，然后控制其输入和输出。
+    进程之间通信：通过multiprocessing模块
+          #父进程中创建Queue，并传给各个子进程
+          q = Queue()
+          #在一个子进程中写入
+          q.put(value) 写入数据到Q里
+          #在另一个子进程中读取
+          q.get(value) 读取Q里的数据
+
+     小结:
+        在Unix/Linux下，可以使用fork()调用实现多进程。
+        要实现跨平台的多进程，可以使用multiprocessing模块。
+        进程间通信是通过Queue、Pipes等实现的。
+
+    多线程：
+        多任务可以由多进程完成，也可以由一个进程内的多线程完成。
+        创建多线程：
+        #使用python标准库的模块_thread和threading.通常使用后者
+        #启动一个线程就是把一个函数传入并创建Thread实例，然后调用start()开始执行
+        t = threading.Thread(targe=函数名，name='线程名')
+        t.start()
+        t.join()
+        #进程执行时会启动一个线程，称为主线程，主线程启动新的线程，
+        主线程实例的名字叫MainThread，子线程的名字在创建时指定
+
+    锁／Lock
+        多线程和多进程最大的不同在于，多进程中，同一个变量，各自有一份拷贝存在于每个进程中，
+        互不影响，而多线程中，所有变量都由所有线程共享，所以，任何一个变量都可以被任何
+        一个线程修改，
+         #创建锁
+         lock = threading.Lock()
+         #获取锁
+         lock.acquire()
+         #多线程执行的函数
+         changge_it(n)
+         #释放锁
+         lock.release()
+         #当多个线程同时执行lock.acquire()时，只有一个线程能成功地获取锁，
+         然后继续执行代码，其他线程就继续等待直到获得锁为止。
+         获得锁的线程用完后一定要释放锁，否则那些苦苦等待锁的线程将永远等待下去，
+         成为死线程。所以我们用try...finally来确保锁一定会被释放。
+        #！Python解释器由于设计时有GIL全局锁，导致了多线程无法利用多核。多线程的并发在Python中就是一个美丽的梦。
+
+    分布式进程：
+        在multiprocessing中子模块managers支持多进程分不到多台机器上。
+        #一台机器写让其他机器进程访问的Queue
+        #通过Queue注册到网络，把Queue写入任务
+        # task_master.py
+        import random, time, queue
+        from multiprocessing.managers import BaseManager
+        # 发送任务的队列:
+        task_queue = queue.Queue()
+        # 接收结果的队列:
+        result_queue = queue.Queue()
+        #一个任务类,继承BaseMangers
+        class QueueManager(BaseMangers)
+        # 把两个Queue都注册到网络上, callable参数关联了Queue对象:
+        QueueManager.register('get_task_queue', callable=lambda: task_queue)
+        QueueManager.register('get_result_queue', callable=lambda: result_queue)
+        # 设置本机ip,绑定端口5000, 设置验证码'abc':
+        manager = QueueManager(address=('', 5000), authkey=b'abc')
+        # 启动Queue:
+        manager.start()
+        # 获得通过网络访问的Queue对象:
+        task = manager.get_task_queue()
+        result = manager.get_result_queue()
+        # 放几个任务进去:
+        for i in range(10):
+            n = random.randint(0, 10000)
+            print('Put task %d...' % n)
+            task.put(n)
+        # 从result队列读取结果:
+        print('Try get results...')
+        for i in range(10):
+            r = result.get(timeout=10)
+            print('Result: %s' % r)
+        # 关闭:
+        manager.shutdown()
+        print('master exit.')
+        #
+        #  另一个机器
+        #
+        # task_worker.py
+        #导入模块
+        import time, sys, queue
+        from multiprocessing.managers import BaseManager
+        # 创建类似的QueueManager:
+        class QueueManager(BaseManager):
+            pass
+        # 由于这个QueueManager只从网络上获取Queue，所以注册时只提供名字:
+        QueueManager.register('get_task_queue')
+        QueueManager.register('get_result_queue')
+        # 连接到服务器，也就是运行task_master.py的机器:
+        server_addr = '127.0.0.1'
+        print('Connect to server %s...' % server_addr)
+        # 端口和验证码注意保持与task_master.py设置的完全一致:
+        m = QueueManager(address=(server_addr, 5000), authkey=b'abc')
+        # 从网络连接:
+        m.connect()
+        # 获取Queue的对象:
+        task = m.get_task_queue()
+        result = m.get_result_queue()
+        # 从task队列取任务,并把结果写入result队列:
+        for i in range(10):
+            try:
+                n = task.get(timeout=1)
+                print('run task %d * %d...' % (n, n))
+                r = '%d * %d = %d' % (n, n, n*n)
+                time.sleep(1)
+                result.put(r)
+            except Queue.Empty:
+                print('task queue is empty.')
+        # 处理结束:
+        print('worker exit.')
+
+正则表达式
+    #匹配字符串
+    ^ 匹配字符串开始位置 #在方括号内[]为取反字符
+    $ 匹配字符串结束位置
+    \ 转义字符
+    | 或，匹配管道符左右中的一个
+    . 匹配任意字符
+    * 前一字符0到任意个
+    + 前一字符1到任意个
+    ？前一字符0到1个
+    ()子表达式开始和结束
+    []精确匹配单个字符的表达式 #常匹配*+？使用
+    {n}{n,}{n,m}#匹配确定n次 #至少匹配n次 #最少匹配n次到最多匹配m次
+    其他正则可网上查询
+
+常用内建模块
+    datetime是python处理日期和时间的标准库。
+        #timestamp时间戳，秒数的形式存储的时间，小数位表示毫秒
+        #datetime转timestamp使用timestamp()方法即可
+        #timestamp转datetime使用fromtimestamp()方法
+        #str转datetime使用strptime()方法
+        #timedelta模块用于多时间的加减计算
+    collections是Python内建的一个集合模块，提供了许多有用的集合类
+        #namedtuple用于给元组自定义属性并规定元素的个数，
+        #deque用于提高list插入和删除元素的速度，是一个双向列表，两端操作，可以指定头部或者尾部操作
+        #defaultdict用于字典的key不存在时，返回一个默认值。配合匿名函数lambda使用
+        #OrderedDict对字典做迭代时，让其保持key的顺序，插入顺序
+        #Counter是一个简单的计数器。
+    base64一种用64个字符来表示任意二进制数据的方法
+    struct用来解决bytes和其他二进制数据类型的转换。
+        #pack函数把任意熟路类型编程bytes
+        #>表示字节顺序是big-endian，也就是网络序，I表示4字节无符号整数。
+        例>>> struct.pack('>I', 10240099)
+         b'\x00\x9c@c'
+        #unpack把bytes变成相应的数据类型
+        #根据>IH的说明，后面的bytes依次变为I：4字节无符号整数和H：2字节无符号整数。
+        例>>>>>> struct.unpack('>IH', b'\xf0\xf0\xf0\xf0\x80\x80')
+        (4042322160, 32896)
+        #struct模块定义的数据类型可以参考Python官方文档
+        一个例子：windpws的文图bmp文件
+        结构顺序：
+        两个字节：'BM'表示Windows位图，'BA'表示OS/2位图；
+        一个4字节整数：表示位图大小；
+        一个4字节整数：保留位，始终为0；
+        一个4字节整数：实际图像的偏移量；
+        一个4字节整数：Header的字节数；
+        一个4字节整数：图像宽度；
+        一个4字节整数：图像高度；
+        一个2字节整数：始终为1；
+        一个2字节整数：颜色数。
+        组合起来用unpack读取
+        >>> struct.unpack('<ccIIIIIIHH', 需要读取的字节)
+        #读取一个bmp文件的信息
+        >>> s = b'\x42\x4d\x38\x8c\x0a\x00\x00\x00\x00\x00\x36\x00\x00\x00\x28\x00\x00\x00\x80\x02\x00\x00\x68\x01\x00\x00\x01\x00\x18\x00'
+        >>> struct.unpack('<ccIIIIIIHH', s)
+        (b'B', b'M', 691256, 0, 54, 40, 640, 360, 1, 24)
+
+    hashilb提供了常见的摘要算法，如MD5，SHA1等等
+        #主要是对一对数据签名，任何修改都会使哈希值变动
+        #以md5为例 导入hashlib模块
+        md5 = hashlib.md5()
+        md5.update('how to use md5 in python hashlib?'.encode('utf-8'))
+        print(md5.hexdigest())
+        #结果
+        d26a53750bc40b38b65a520292f69306
+        #如果数据量很大，可以分块多次调用update()，计算结果是于洋的
+        md5 = hashlib.md5()
+        md5.update('how to use md5 in '.encode('utf-8'))
+        md5.update('python hashlib?'.encode('utf-8'))
+        print(md5.hexdigest())
+        MD5是最常见的摘要算法，速度很快，生成结果是固定的128 bit字节，通常用一个32位的16进制字符串表示。
+        #另一种摘要算法SHA1，调用方法和MD5完全类似
+        sha1 = hashlib.sha1()
+        sha1.update('how to use sha1 in '.encode('utf-8'))
+        sha1.update('python hashlib?'.encode('utf-8'))
+        print(sha1.hexdigest())
+        SHA1的结果是160 bit字节，通常用一个40位的16进制字符串表示。
+
+        #摘要算法的应用
+        数据库存储的用户名和口令，英国存储用户口令的摘要，比如md5
+        当用户登陆时，首先用户输入明文口令，程序转换为md5值，在和数据库存储的md5值对比
+        如果一致，说明口令输入正确，如果不一致，口令肯定错误。
+        #由于常用口令的MD5值很容易被计算出来，所以，要确保存储的用户口令不是那些已经被计算出来的常用口令的MD5，
+        这一方法通过对原始口令加一个复杂字符串来实现，俗称“加盐”：
+        #给每个用户的口令都加上一段自己定义的字符
+        def calc_md5(password):
+            return get_md5(password + 'the-Salt')
+        #可以把登陆明作为Salt的一部分来计算MD5
+    hmac算法：Keyed-Hashing for Message Authentication。它通过一个标准算法，在计算哈希的过程中，把key混入计算过程中
+        #给数据中加入随机key在进行签名
+        >>> import hmac
+        >>> message = b'Hello, world!'
+        >>> key = b'secret'
+        >>> h = hmac.new(key, message, digestmod='MD5')
+        >>> # 如果消息很长，可以多次调用h.update(msg)
+        >>> h.hexdigest()
+        'fa4ee7d173f2d97ee79022d1a7355bcf'
+
+    itertools #提供非常有用的用于操作迭代对象的函数。
+         #count()会创建一个无限的迭代器
+         #cycle()会把传入的一个序列无限重复下去
+         #repeat()负责吧一个元素无限重复下去，如果提供第二个参数可以限定重复次数。
+         #无限序列只有在for迭代时才会无限地迭代下去，如果只是创建了一个迭代对象，
+         它不会事先把无限个元素生成出来，事实上也不可能在内存中创建无限多个元素。
+         #teakewhile()根据条件判断来截取一个有限的序列
+         >>> natuals = itertools.count(1)
+         >>> ns = itertools.takewhile(lambda x: x <= 10, natuals)
+         >>> list(ns)
+         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        #chain()可以把一组迭代对象串联起来，形成一个更大的迭代器
+        #groupby()把迭代器中相邻的重复元素挑出来放在一起
+
+    contextlib #提供读写文件时间文件关闭退出的一些功能
+         #@contextmanager对有上下文管理的对象实现自动管理
+         #自动执行前后特定代码
+         @contextmanager
+          def tag(name):
+              print("<%s>" % name)
+              yield
+              print("</%s>" % name)
+
+          with tag("h1"):
+              print("hello")
+              print("world")
+
+           #1.with语句首先执行yield之前的语句，因此打印出<h1>；
+            2.yield调用会执行with语句内部的所有语句，因此打印出hello和world；
+            3.最后执行yield之后的语句，打印出</h1>。
+
+        #@closing让一个没有实现上下文的对象实现变成上下文对象
+
+    urllib #提供了一系列用户操作URL的功能
+          #request可以非常方便的抓去URL内容，发送一个GET请求到指定页面，返回HTTP响应
+    xml有两种解析方式：DOM 和SAX ，正常情况下，优先考虑SAX，因为DOM实在太占内存。
+          举个例子，当SAX解析器读到一个节点时：
+          <a href="/">python</a>
+          会产生3个事件：
+          start_element事件，在读取<a href="/">时；
+          char_data事件，在读取python时；
+          end_element事件，在读取</a>时。
+
+    HTMLParser用来解析html
+          #导入html.parser中的子模块HTMLParser使用
+          #在类中让其继承HTMLParser
+
+常用第三方模块
+    Pillow #python平台上图像处理标准库
+          安装Pillw：pip install pillow
+          #操作图像
+          from PIL import Image
+          # 打开一个jpg图像文件，注意是当前路径:
+          im = Image.open('test.jpg')
+          # 获得图像尺寸:
+          w, h = im.size
+          print('Original image size: %sx%s' % (w, h))
+          # 缩放到50%:
+          im.thumbnail((w//2, h//2))
+          print('Resize image to: %sx%s' % (w//2, h//2))
+          # 把缩放后的图像用jpeg格式保存:
+          im.save('thumbnail.jpg', 'jpeg')
+
+          #模糊一张图片
+          im = Image.open('test.jpg')
+          # 应用模糊滤镜:
+          im2 = im.filter(ImageFilter.BLUR)
+          im2.save('blur.jpg', 'jpeg')
+
+          #PIL的imagerDRAW提供了一系列绘图方法，比如生成字母验证码图片
+          from PIL import Image, ImageDraw, ImageFont, ImageFilter
+
+          import random
+
+          # 随机字母:
+          def rndChar():
+              return chr(random.randint(65, 90))
+
+          # 随机颜色1:
+          def rndColor():
+              return (random.randint(64, 255), random.randint(64, 255), random.randint(64, 255))
+
+          # 随机颜色2:
+          def rndColor2():
+              return (random.randint(32, 127), random.randint(32, 127), random.randint(32, 127))
+
+          # 240 x 60:
+          width = 60 * 4
+          height = 60
+          image = Image.new('RGB', (width, height), (255, 255, 255))
+          # 创建Font对象:
+          font = ImageFont.truetype('Arial.ttf', 36)
+          # 创建Draw对象:
+          draw = ImageDraw.Draw(image)
+          # 填充每个像素:
+          for x in range(width):
+              for y in range(height):
+                  draw.point((x, y), fill=rndColor())
+          # 输出文字:
+          for t in range(4):
+              draw.text((60 * t + 10, 10), rndChar(), font=font, fill=rndColor2())
+          # 模糊:
+          image = image.filter(ImageFilter.BLUR)
+          image.save('code.jpg', 'jpeg')
+
+    requests #python的第三方出路URL资源的库
+          #安装：pip install requests
+          #通过get访问一个界面
+          >>>r = requests.get(url)
+          #访问状态代码
+          >>>r.status_code
+          读取html信息
+          >>>r.text
+
+          #对于有参数的URL，传入一个字典作为params参数
+          >>> r = requests.get('https://www.douban.com/search', params={'q': 'python', 'cat': '1001'})
+          >>> r.url # 实际请求的URL
+          'https://www.douban.com/search?q=python&cat=1001'
+
+    charder #检测编码格式
+          #安装：pip install charder
+          #拿到一个bytes时，对其检测编码
+          >>>charder.detect(b'Hello,world!')
+          {'encoding': 'ascii', 'confidence': 1.0, 'language': ''}
+          检测出的编码是ascii，注意到还有个confidence字段，表示检测的概率是1.0（即100%）。
+
+    psutiil #获取系统信息
+          #安装 pip install pautil
+          #获取CPU信息
+          >>> import psutil
+          >>> psutil.cpu_count() # CPU逻辑数量
+          4
+          >>> psutil.cpu_count(logical=False) # CPU物理核心
+          2
+          # 2说明是双核超线程, 4则是4核非超线程
+
+          #统计CPU的用户／系统／空闲时间：
+          >>> psutil.cpu_times()
+          scputimes(user=10963.31, nice=0.0, system=5138.67, idle=356102.45)
+          #获取内存信息
+            使用psutil获取物理内存和交换内存信息，分别使用：
+            >>> psutil.virtual_memory()
+            svmem(total=8589934592, available=2866520064, percent=66.6, used=7201386496, free=216178688, active=3342192640, inactive=2650341376, wired=1208852480)
+            >>> psutil.swap_memory()
+            sswap(total=1073741824, used=150732800, free=923009024, percent=14.0, sin=10705981440, sout=40353792)
+            返回的是字节为单位的整数，可以看到，总内存大小是8589934592 = 8 GB，已用7201386496 = 6.7 GB，使用了66.6%。
+            而交换区大小是1073741824 = 1 GB。
+          获取磁盘信息： psutil.disk_不同的方法()
+          获取网络信息：psutil.net_不同的方法()
+          获取进程信息：psutil.Process(pid)
+
+虚拟环境:virtualenv
+        一个开发环境，具体搭载百度即可
