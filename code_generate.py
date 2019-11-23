@@ -4,24 +4,27 @@
 import pymysql
 import os	
 
+
+# Mysql连接
 class DB():
 	def __init__(self, host='localhost', port=3306, db='', user='root', passwd='root', charset='utf8'):
 		# 建立连接 
 		self.conn = pymysql.connect(host=host, port=port, db=db, user=user, passwd=passwd, charset=charset)
 		# 创建游标，操作设置为字典类型        
 		#self.cursor = self.conn.cursor(cursor = pymysql.cursors.DictCursor)
+		# 游标元组类型
 		self.cursor = self.conn.cursor()
 
 
 	def __enter__(self):
 		# 返回游标 
-			# fetchone(): 该方法获取下一个查询结果集。结果集是一个对象
+		# fetchone(): 该方法获取下一个查询结果集。结果集是一个对象
 		# fetchall(): 接收全部的返回结果行.
 		# rowcount: 这是一个只读属性，并返回执行execute()方法后影响的行数。       
 		return self.cursor
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
-		# 提交数据库并执行        
+		# 提交数据库并执行
 		self.conn.commit()
 		# 关闭游标        
 		self.cursor.close()
@@ -29,39 +32,43 @@ class DB():
 		self.conn.close()
 
 
+# 生成文件
 def generate(path,fetch):
-	
-	ceate_dir(path)
+	entity_path = path + "\\enity"
+	repository_path = path + "\\repository" 
+	create_dir(entity_path,"")
+	create_dir(repository_path,"")
 
 	for i in fetch:
-		table = formatter(i[0]);
+		table_name = formatter(i[0]);
 		db.execute("describe "+i[0])
 		fields = db.fetchall()
-		content = jpa_content(table,fields)
-		create_file(path+"\\"+table,content)
+		content = jpa_entity(table_name,fields)
+		create_file(entity_path+"\\"+table_name,content)
+		re_content = jpa_repository(table_name,fields)
+		#print(re_content)
+		create_file(repository_path+"\\"+table_name+"Repository",re_content)
 
-
-	
 
 # 创建文件夹
-def ceate_dir(path):
+def create_dir(path: str ,appendir: str):
 	isExists=os.path.exists(path)
 	if not isExists:
 		# 如果不存在则创建目录
 		# 创建目录操作函数
+		if appendir != "":
+			path += appendir
 		os.makedirs(path) 
-		(path+' 创建成功')
+		(path+' created success.')
 	return 
+
 
 # 创建文件
 def create_file(filename,content):
-	'''根据本地时间创建新文件，如果已存在则不创建'''
-	import time
-	t = time.strftime('%Y-%m-%d',time.localtime())  #将指定格式的当前时间以字符串输出
 	suffix = ".java"
 	newfile= filename+suffix
 	if not os.path.exists(newfile):
-		f = open(newfile,'w')
+		f = open(newfile,'w+')
 		f.write(content)
 		f.close()
 		print(newfile + " created.")
@@ -70,22 +77,21 @@ def create_file(filename,content):
 	return
 
 
-# 文件模板内容
-def jpa_content(filename,cloums):
+# Jpa实体类文件模板内容
+def jpa_entity(filename,cloums):
 	packages =[
-		"package com.xxy.yd.usermanage.entity;\r"
+		"package com.xxy.yd.common.entity;\r",
 		"import lombok.Data;\r"
 		"import javax.persistence.*;\r"
-		"import java.io.Serializable;\r"
-		" \r "
+		"import java.io.Serializable;\r"	
 	] 
 	class_annotaion = [
-		"@Entity\r ",
-		"@Data\r ",
+		"@Entity\r",
+		"@Data\r",
 	]
 	primary_key = [
-		"\t@GeneratedValue(strategy=GenerationType.IDENTITY)\r ",
-		"\t@Id\r ",
+		"\t@GeneratedValue(strategy=GenerationType.IDENTITY)\r",
+		"\t@Id\r",
 	]
 	class_name = [
 		"public class ",
@@ -98,26 +104,60 @@ def jpa_content(filename,cloums):
 	]
 
 
-	
-	content = packages+class_annotaion+class_name+primary_key
+
+
+	# 存储字段
+	fileds = []
+
 	# 写入字段
-	for c in cloums:
-		fields = [
+	for val in cloums:
+		field = [
 			"\tprivate ",
 		]
-		key_name = formatter(c[0],False)
-		java_type = sqlType2JavaType(c[1])
+		key_name = formatter(val[0],False)
+		java_type = sqlType2JavaType(val[1])
+		if java_type == "Date" and "import java.util.Date;\r" not in packages:
+			packages.append("import java.util.Date;\r")
 		
-		fields.append(java_type)
-		fields.append(" ")
-		fields.append(key_name)
-		fields.append("; \r ")
-		content+=fields
+		field.append(java_type)
+		field.append(" ")
+		field.append(key_name)
+		field.append("; \r")
+		fileds+=field
+
+
+	packages.append(" \r")
+	content = packages+class_annotaion+class_name+primary_key+fileds
 
 	content+=footer
-	s = "".join(content)
-	print(s)
-	return s
+	file_content = "".join(content)
+	return file_content
+
+
+# Jpa repositoty
+def jpa_repository(table_name,cloums):
+	id_key = sqlType2JavaType(cloums[0][1])
+	print(id_key)
+	packages = [
+		"package com.xxy.yd.usermanage.dao.repository;\r",
+		"import org.springframework.data.jpa.repository.JpaRepository;\r",
+		"import org.springframework.data.repository.NoRepositoryBean;\r",
+		"import com.xxy.yd.common.entity."+table_name+";\r",
+		"\r",
+	]
+
+	class_annotaion = [
+		"@NoRepositoryBean\r",
+
+	]
+
+	class_name = [
+		"public interface ",
+		table_name+"Repository ",
+		"extends JpaRepository<"+table_name+","+id_key+"> {\r\n}"
+	]
+	content = packages+class_annotaion+class_name
+	return "".join(content)
 
 
 # 将下划线分隔的名字,转换为驼峰模式
@@ -159,10 +199,23 @@ def sqlType2JavaType(sqlType):
 
 
 
+# 判断引用类型添加包
+def reference_type(java_type):
+	if java_type == "Date":
+		return "import java.util.Date;\r"
+	if java_type == "List":
+		return "import java.util.List;\r"
+	if java_type == "Map":
+		return "import java.util.Map;\r"
+	return None
+
+
 
 if __name__ == '__main__':
-	with DB(host='host',user='username',passwd='psd',db='database') as db:
+	with DB(host='host',user='user',passwd='psd',db='databas') as db:
 		db.execute('SHOW TABLES')
+		# 所有表信息
 		fetch = db.fetchall()
-		path = "c:\\Users\\tars\\Desktop\\entity"
+		# 文件输入文件夹
+		path = "c:\\Users\\tars\\Desktop\\auto_code"
 		generate(path,fetch)
